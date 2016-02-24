@@ -1,0 +1,185 @@
+var osc;
+
+var synths = [];
+
+var activeNotes = [];
+
+var t1 = 0;
+
+var t2 = 0;
+
+var t3 = 0;
+
+var notes = [130.82, 146.84, 155.56, 174.62, 196, 220, 233.08];
+
+var mults = [1.189, 1.335, 1.498, 2.118];
+
+var synthTable = [1];
+
+var Findex = 1;
+
+var amping = .5;
+
+var noteFactor = 12;
+
+var blobXs = [75, 225, 375, 525];
+
+var blobYs = [200, 200, 200, 200];
+
+var blobDiams = [60, 60, 60, 60];
+
+var rVals = [];
+
+var gVals = [];
+
+var bVals = [];
+
+var whichMult = 0;
+
+function setup() {
+  createCanvas(600, 400);
+  synths[0] = new p5.Oscillator();
+  synths[0].setType('sine');
+
+  shuffle(notes, true);
+  
+  activeNotes = [notes[0], notes[1], notes[2]];
+  
+  synths[0].freq(activeNotes[0]);
+  synths[0].amp(amping);
+  synths[0].start();
+  
+  rVals = [random(125, 255), random(125, 255), random(125, 255), random(125, 255)];
+  gVals = [random(125, 255), random(125, 255), random(125, 255), random(125, 255)];
+  bVals = [random(125, 255), random(125, 255), random(125, 255), random(125, 255)];
+  
+  blobXs = [random(50, 100), random(200, 250), random(350, 400), random(500, 550)];
+  blobYs = [random(50, 350), random(50, 350), random(50, 350), random(50, 350)];
+  blobDiams = [random(50, 100), random(50, 100), random(50, 100), random(50, 100)];
+  
+}
+
+function draw() {
+  background(0);
+  
+  if (t1 == 360) {
+    setNewNotes();
+    t3 = 0;
+    setVisVals();
+  }
+
+  if (t2 == 30) {
+    changeFreqs();
+  }
+  
+  if (t1 >= 230) {
+    drawCircles();
+  }
+  
+
+  
+  t1++;
+  t2++;
+  
+}
+
+function setVisVals() {
+  rVals = [random(125, 255), random(125, 255), random(125, 255), random(125, 255)];
+  gVals = [random(125, 255), random(125, 255), random(125, 255), random(125, 255)];
+  bVals = [random(125, 255), random(125, 255), random(125, 255), random(125, 255)];
+  
+  blobXs = [random(50, 100), random(200, 250), random(350, 400), random(500, 550)];
+  blobYs = [random(50, 350), random(50, 350), random(50, 350), random(50, 350)];
+  blobDiams = [random(50, 100), random(50, 100), random(50, 100), random(50, 100)];
+}
+
+function drawCircles() {
+
+  noStroke();
+  for (var i = 0; i<4; i++) {
+    push();
+    fill(rVals[i], gVals[i], bVals[i], t3 * 2);
+    translate(blobXs[i], blobYs[i]);
+    ellipse(0, 0, blobDiams[i], blobDiams[i]);
+    pop();
+  }
+
+  
+  t3++;
+}
+
+function changeFreqs() {
+activeNotes[3] = activeNotes[0];
+activeNotes.splice(0, 1);
+
+for (var i = 0; i<synths.length; i++) {
+  synths[i].freq(activeNotes[0] * synthTable[i]);
+}
+// synths[0].freq(activeNotes[0]);
+t2 = 0;
+}
+
+function setNewNotes() {
+  var holdouts = [notes[0], notes[1], notes[2]];
+  notes.splice(0, 3);
+  shuffle(notes, true);
+  activeNotes = [notes[0], notes[1], notes[2]];
+  notes.push(holdouts[0]);
+    notes.push(holdouts[1]);
+      notes.push(holdouts[2]);
+
+  changeFreqs();
+  if (whichMult !== 0) {
+   addHarm();
+  }
+  t1 = 0;
+}
+
+function addHarm() {
+  
+if (Findex <= 4) {
+  // shuffle(mults, true);
+  synthTable.push(mults[whichMult-1] * Findex);
+  amping = amping/4;
+  synths.push(new p5.Oscillator());
+  synths[synths.length-1].freq(activeNotes[0] * synthTable[synthTable.length-1]);
+  synths[synths.length-1].amp(amping);
+  synths[synths.length-1].start();
+  Findex = Findex * 2;
+  whichMult = 0;
+} else {
+  noteFactor = 7 - whichMult;
+  for (var n=0;n<synths.length; n++) {
+    synths[n].stop();
+  }
+  synths = [];
+  amping = .5;
+
+
+  for (var i=0; i<notes.length; i++) {
+    notes[i] = (notes[i] * synthTable[1] * synthTable[2]) / noteFactor;
+  }
+  
+  synthTable = [1];
+  synths[0] = new p5.Oscillator();
+  synths[0].setType('sine');
+
+  
+  activeNotes = [notes[0], notes[1], notes[2]];
+  
+  synths[0].freq(activeNotes[0]);
+  synths[0].amp(amping);
+  synths[0].start();
+  
+  Findex = 1;
+  whichMult = 0;
+}
+}
+
+function mousePressed() {
+  for (var i=0; i<4; i++) {
+    if ((dist(mouseX, mouseY, blobXs[i], blobYs[i]) <= blobDiams[i]) && t3 >= 1 && whichMult === 0) {
+      whichMult = i+1;
+    }
+  }
+}
